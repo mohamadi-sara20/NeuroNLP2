@@ -69,9 +69,11 @@ class CoNLLXReader(object):
             char_id_seqs.append(char_ids)
 
             word = DIGIT_RE.sub("0", tokens[1]) if normalize_digits else tokens[1]
+
             pos = tokens[4]
-            head = int(tokens[6])
-            type = tokens[7]
+            head = int(tokens[8])
+            ### TODO: This should be changed later. Hard-coded for now. 
+            ttype = ' B-org'
 
             words.append(word)
             word_ids.append(self.__word_alphabet.get_index(word))
@@ -79,8 +81,8 @@ class CoNLLXReader(object):
             postags.append(pos)
             pos_ids.append(self.__pos_alphabet.get_index(pos))
 
-            types.append(type)
-            type_ids.append(self.__type_alphabet.get_index(type))
+            types.append(ttype)
+            type_ids.append(self.__type_alphabet.get_index(ttype))
 
             heads.append(head)
 
@@ -121,7 +123,7 @@ class CoNLL03Reader(object):
         lines = []
         while len(line.strip()) > 0:
             line = line.strip()
-            lines.append(line.split(' '))
+            lines.append(line.split('\t'))
             line = self.__source_file.readline()
 
         length = len(lines)

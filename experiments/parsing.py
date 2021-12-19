@@ -10,7 +10,6 @@ import json
 current_path = os.path.dirname(os.path.realpath(__file__))
 root_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.append(root_path)
-
 import time
 import argparse
 import math
@@ -21,8 +20,8 @@ from torch.optim import SGD
 from torch.nn.utils import clip_grad_norm_
 from neuronlp2.nn.utils import total_grad_norm
 from neuronlp2.io import get_logger, conllx_data, conllx_stacked_data, iterate_data
-from neuronlp2.models import DeepBiAffine, NeuroMST, StackPtrNet
-from neuronlp2.optim import ExponentialScheduler
+from neuronlp2.models import DeepBiAffine, NeuroMST, StackPtrNet, BiRecurrentConvBiAffine
+from neuronlp2.optim import ExponentialScheduler 
 from neuronlp2 import utils
 from neuronlp2.io import CoNLLXWriter
 from neuronlp2.tasks import parser
@@ -56,6 +55,7 @@ def eval(alg, data, network, pred_writer, gold_writer, punct_set, word_alphabet,
     accum_total_inst = 0.0
     for data in iterate_data(data, batch_size):
         words = data['WORD'].to(device)
+        # print('##########', words)
         chars = data['CHAR'].to(device)
         postags = data['POS'].to(device)
         heads = data['HEAD'].numpy()
@@ -107,7 +107,6 @@ def eval(alg, data, network, pred_writer, gold_writer, punct_set, word_alphabet,
     return (accum_ucorr, accum_lcorr, accum_ucomlpete, accum_lcomplete, accum_total), \
            (accum_ucorr_nopunc, accum_lcorr_nopunc, accum_ucomlpete_nopunc, accum_lcomplete_nopunc, accum_total_nopunc), \
            (accum_root_corr, accum_total_root, accum_total_inst)
-
 
 def train(args):
     logger = get_logger("Parsing")
@@ -221,7 +220,9 @@ def train(args):
     hyps = json.load(open(args.config, 'r'))
     json.dump(hyps, open(os.path.join(model_path, 'config.json'), 'w'), indent=2)
     model_type = hyps['model']
-    assert model_type in ['DeepBiAffine', 'NeuroMST', 'StackPtr']
+
+
+    assert model_type in ['ConvBiAffine', 'DeepBiAffine', 'NeuroMST', 'StackPtr']
     assert word_dim == hyps['word_dim']
     if char_dim is not None:
         assert char_dim == hyps['char_dim']
@@ -239,6 +240,8 @@ def train(args):
     activation = hyps['activation']
     prior_order = None
 
+   
+        
     alg = 'transition' if model_type == 'StackPtr' else 'graph'
     if model_type == 'DeepBiAffine':
         num_layers = hyps['num_layers']
@@ -246,12 +249,25 @@ def train(args):
                                mode, hidden_size, num_layers, num_types, arc_space, type_space,
                                embedd_word=word_table, embedd_char=char_table,
                                p_in=p_in, p_out=p_out, p_rnn=p_rnn, pos=use_pos, activation=activation)
+    elif model_type == 'ConvBiAffine':
+        num_layers = hyps['num_layers']
+        num_filters = hyps['num_filters']
+        kernel_size = hyps['kernel_size']
+        network = BiRecurrentConvBiAffine(word_dim, num_words, char_dim, num_chars, pos_dim, num_pos,
+                               num_filters, kernel_size, mode, hidden_size, num_layers, num_types, arc_space, type_space,
+                               embedd_word=word_table, embedd_char=char_table,
+                               p_in=p_in, p_out=p_out, p_rnn=p_rnn, pos=use_pos)
+        id2word = {v: k for k, v in word_alphabet.instance2index.items()}
+        network.id2word = id2word
+        network.original_words = id2word.values()
     elif model_type == 'NeuroMST':
         num_layers = hyps['num_layers']
         network = NeuroMST(word_dim, num_words, char_dim, num_chars, pos_dim, num_pos,
                            mode, hidden_size, num_layers, num_types, arc_space, type_space,
                            embedd_word=word_table, embedd_char=char_table,
                            p_in=p_in, p_out=p_out, p_rnn=p_rnn, pos=use_pos, activation=activation)
+       
+        
     elif model_type == 'StackPtr':
         encoder_layers = hyps['encoder_layers']
         decoder_layers = hyps['decoder_layers']
@@ -561,6 +577,8 @@ def parse(args):
     activation = hyps['activation']
     prior_order = None
 
+
+
     alg = 'transition' if model_type == 'StackPtr' else 'graph'
     if model_type == 'DeepBiAffine':
         num_layers = hyps['num_layers']
@@ -613,6 +631,7 @@ def parse(args):
 
     pred_writer.close()
     gold_writer.close()
+
 
 
 if __name__ == '__main__':

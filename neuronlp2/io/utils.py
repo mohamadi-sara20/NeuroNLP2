@@ -119,6 +119,7 @@ def iterate_bucketed_batch(data, batch_size, unk_replace=0., shuffle=False):
         words = data['WORD']
         single = data['SINGLE']
         bucket_length = words.size(1)
+        # unk_replace=False
         if unk_replace:
             ones = single.new_ones(bucket_size, bucket_length)
             noise = single.new_empty(bucket_size, bucket_length).bernoulli_(unk_replace).long()
