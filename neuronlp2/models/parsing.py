@@ -759,8 +759,6 @@ class BiRecurrentConvBiAffine(nn.Module):
                 num_filters, kernel_size, rnn_mode, hidden_size, num_layers, num_labels, arc_space, type_space,
                  embedd_word=None, embedd_char=None, embedd_pos=None, p_in=0.33, p_out=0.33, p_rnn=(0.33, 0.33), biaffine=True, pos=True, char=True):
         super(BiRecurrentConvBiAffine, self).__init__()
-
-        
         
         self.word_embedd = nn.Embedding(num_words, word_dim, _weight=embedd_word, padding_idx=1)
         self.pos_embedd = nn.Embedding(num_pos, pos_dim, _weight=embedd_pos, padding_idx=1) if pos else None
@@ -803,11 +801,11 @@ class BiRecurrentConvBiAffine(nn.Module):
         self.bilinear = BiLinear(type_space, type_space, self.num_labels)
     
     def _write_new_line(self, path):
-        f_arc_dep = path+'arc_dep'
-        f_arc_head = path+'arc_head'
-        f_lstm_out = path+'lstm_out'
-        f_rel_dep = path+'rel_dep'
-        f_rel_head = path+'rel_head'
+        f_arc_dep = path+'arc_depssssss'
+        f_arc_head = path+'arc_headsssss'
+        f_lstm_out = path+'lstm_outsssss'
+        f_rel_dep = path+'rel_depssssss'
+        f_rel_head = path+'rel_headsssss'
 
         f = open(f_arc_dep, 'a')
         f.write('\n')
@@ -830,13 +828,13 @@ class BiRecurrentConvBiAffine(nn.Module):
         f.close()
 
     def _write_the_output(self, path, word, arc_dep, arc_head, lstm_out, rel_dep, rel_head):
-        f_arc_dep = path+'arc_dep'
-        f_arc_head = path+'arc_head'
-        f_lstm_out = path+'lstm_out'
-        f_rel_dep = path+'rel_dep'
-        f_rel_head = path+'rel_head'
+        f_arc_dep = path+'arc_depssssss'
+        f_arc_head = path+'arc_headsssss'
+        f_lstm_out = path+'lstm_outsssss'
+        f_rel_dep = path+'rel_depssssss'
+        f_rel_head = path+'rel_headsssss'
 
-        print(">>>>>>>>>>>>>", word)
+        # print(">>>>>>>>>>>>>", word)
 
         f = open(f_arc_dep, 'a')
         f.write(word+' '+' '.join([str(float(a)) for a in arc_dep])+'\n')
@@ -967,7 +965,7 @@ class BiRecurrentConvBiAffine(nn.Module):
         
         # import ipdb; ipdb.set_trace()
         # dep, head, out, dep, head
-        print("data", input_word.data[0])
+        # print("data", input_word.data[0])
         for i in range(len(input_word.data[0])):
             if input_word.data[0][i] == 2 or input_word.data[0][i] == 1 or input_word.data[0][i] == 0:
                 continue

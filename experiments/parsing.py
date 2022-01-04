@@ -1,6 +1,7 @@
 """
 Implementation of Graph-based dependency parsing.
 """
+import torch
 
 import os
 import sys
@@ -15,7 +16,6 @@ import argparse
 import math
 import numpy as np
 import torch
-from torch.optim.adamw import AdamW
 from torch.optim import SGD
 from torch.nn.utils import clip_grad_norm_
 from neuronlp2.nn.utils import total_grad_norm
@@ -32,7 +32,7 @@ def get_optimizer(parameters, optim, learning_rate, lr_decay, betas, eps, amsgra
     if optim == 'sgd':
         optimizer = SGD(parameters, lr=learning_rate, momentum=0.9, weight_decay=weight_decay, nesterov=True)
     else:
-        optimizer = AdamW(parameters, lr=learning_rate, betas=betas, eps=eps, amsgrad=amsgrad, weight_decay=weight_decay)
+        optimizer = torch.optim.adamw.AdamW(parameters, lr=learning_rate, betas=betas, eps=eps, amsgrad=amsgrad, weight_decay=weight_decay)
     init_lr = 1e-7
     scheduler = ExponentialScheduler(optimizer, lr_decay, warmup_steps, init_lr)
     return optimizer, scheduler
@@ -472,6 +472,8 @@ def train(args):
 
                 best_epoch = epoch
                 patient = 0
+
+                print('HERE BEFORE TRAINING')
                 torch.save(network.state_dict(), model_name)
 
                 pred_filename = os.path.join(result_path, 'pred_test%d' % epoch)
@@ -562,7 +564,8 @@ def parse(args):
     logger.info("loading network...")
     hyps = json.load(open(os.path.join(model_path, 'config.json'), 'r'))
     model_type = hyps['model']
-    assert model_type in ['DeepBiAffine', 'NeuroMST', 'StackPtr']
+    print(model_type)
+    assert model_type in ['DeepBiAffine', 'NeuroMST', 'StackPtr', 'ConvBiAffine']
     word_dim = hyps['word_dim']
     char_dim = hyps['char_dim']
     use_pos = hyps['pos']
@@ -585,6 +588,18 @@ def parse(args):
         network = DeepBiAffine(word_dim, num_words, char_dim, num_chars, pos_dim, num_pos,
                                mode, hidden_size, num_layers, num_types, arc_space, type_space,
                                p_in=p_in, p_out=p_out, p_rnn=p_rnn, pos=use_pos, activation=activation)
+
+    elif model_type == 'ConvBiAffine':
+        num_layers = hyps['num_layers']
+        network = BiRecurrentConvBiAffine(word_dim=word_dim, num_words=num_words, char_dim=char_dim, num_chars=num_chars,
+                                          pos_dim=pos_dim, num_pos=num_pos,
+                                          hidden_size=hidden_size, num_layers=num_layers, num_labels=num_types,
+                                          p_in=p_in, p_out=p_out, p_rnn=p_rnn, pos=use_pos, arc_space=arc_space, type_space=type_space,
+                                          kernel_size=hyps['kernel_size'], rnn_mode=hyps["rnn_mode"],
+                                          num_filters=hyps['num_filters'])
+        id2word = {v: k for k, v in word_alphabet.instance2index.items()}
+        network.id2word = id2word
+        network.original_words = id2word.values()
     elif model_type == 'NeuroMST':
         num_layers = hyps['num_layers']
         network = NeuroMST(word_dim, num_words, char_dim, num_chars, pos_dim, num_pos,
@@ -597,7 +612,7 @@ def parse(args):
         prior_order = hyps['prior_order']
         grandPar = hyps['grandPar']
         sibling = hyps['sibling']
-        network = StackPtrNet(word_dim, num_words, char_dim, num_chars, pos_dim, num_pos,
+        network = StackPtrNet(word_dim, num_words, char_dim, num_chars, num_pos,
                               mode, hidden_size, encoder_layers, decoder_layers, num_types, arc_space, type_space,
                               prior_order=prior_order, activation=activation, p_in=p_in, p_out=p_out, p_rnn=p_rnn,
                               pos=use_pos, grandPar=grandPar, sibling=sibling)
@@ -615,6 +630,8 @@ def parse(args):
     else:
         data_test = conllx_stacked_data.read_data(test_path, word_alphabet, char_alphabet, pos_alphabet, type_alphabet, prior_order=prior_order)
 
+
+
     beam = args.beam
     pred_writer = CoNLLXWriter(word_alphabet, char_alphabet, pos_alphabet, type_alphabet)
     gold_writer = CoNLLXWriter(word_alphabet, char_alphabet, pos_alphabet, type_alphabet)
@@ -622,13 +639,16 @@ def parse(args):
     pred_writer.start(pred_filename)
     gold_filename = os.path.join(result_path, 'gold.txt')
     gold_writer.start(gold_filename)
+    network.eval()
 
-    with torch.no_grad():
-        print('Parsing...')
-        start_time = time.time()
-        eval(alg, data_test, network, pred_writer, gold_writer, punct_set, word_alphabet, pos_alphabet, device, beam, batch_size=args.batch_size)
-        print('Time: %.2fs' % (time.time() - start_time))
-
+    for i in range(len(data_test)-1):
+        network._get_rnn_output( data_test[i]['WORD'],data_test[i]['CHAR'],data_test[i]['POS'])
+        # network.forward()
+    # with torch.no_grad():
+    #     print('Parsing...')
+    #     start_time = time.time()
+    #     eval(alg, data_test, network, pred_writer, gold_writer, punct_set, word_alphabet, pos_alphabet, device, beam, batch_size=args.batch_size)
+    #     print('Time: %.2fs' % (time.time() - start_time))
     pred_writer.close()
     gold_writer.close()
 
