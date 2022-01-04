@@ -26,13 +26,13 @@ from neuronlp2 import utils
 from neuronlp2.io import CoNLLXWriter
 from neuronlp2.tasks import parser
 from neuronlp2.nn.utils import freeze_embedding
-
+from torch.optim.adamw import AdamW
 
 def get_optimizer(parameters, optim, learning_rate, lr_decay, betas, eps, amsgrad, weight_decay, warmup_steps):
     if optim == 'sgd':
         optimizer = SGD(parameters, lr=learning_rate, momentum=0.9, weight_decay=weight_decay, nesterov=True)
     else:
-        optimizer = torch.optim.adamw.AdamW(parameters, lr=learning_rate, betas=betas, eps=eps, amsgrad=amsgrad, weight_decay=weight_decay)
+        optimizer = AdamW(parameters, lr=learning_rate, betas=betas, eps=eps, amsgrad=amsgrad, weight_decay=weight_decay)
     init_lr = 1e-7
     scheduler = ExponentialScheduler(optimizer, lr_decay, warmup_steps, init_lr)
     return optimizer, scheduler
@@ -220,10 +220,13 @@ def train(args):
     hyps = json.load(open(args.config, 'r'))
     json.dump(hyps, open(os.path.join(model_path, 'config.json'), 'w'), indent=2)
     model_type = hyps['model']
+    print('##############WD', word_dim)
 
+    print('##############CONFIG', word_dim)
 
     assert model_type in ['ConvBiAffine', 'DeepBiAffine', 'NeuroMST', 'StackPtr']
     assert word_dim == hyps['word_dim']
+
     if char_dim is not None:
         assert char_dim == hyps['char_dim']
     else:
@@ -687,6 +690,7 @@ if __name__ == '__main__':
 
     args = args_parser.parse_args()
     if args.mode == 'train':
+
         train(args)
     else:
         parse(args)

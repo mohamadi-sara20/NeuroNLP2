@@ -1,6 +1,6 @@
 {
   "model": "ConvBiAffine",
-  "word_dim": 300,
+  "word_dim": 100,
   "char_dim": 100,
   "pos": true,
   "pos_dim": 100,

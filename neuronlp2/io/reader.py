@@ -70,12 +70,12 @@ class CoNLLXReader(object):
 
             word = DIGIT_RE.sub("0", tokens[1]) if normalize_digits else tokens[1]
             # TODO: Be careful with indices when training using new data. 
-            pos = tokens[4]
+            pos = tokens[5]
             # print('POS', pos)
-            head = int(tokens[8])
+            head = int(tokens[9])
             # print("HEAD", head)
             ### TODO: This should be changed later, to extract the type from a conll row. Hard-coded for now. 
-            ttype = (tokens[10])
+            ttype = (tokens[11])
             # print('type', ttype)
 
             words.append(word)
@@ -173,8 +173,6 @@ class CoNLL03Reader(object):
             ner_tags.append(ner)
             ner_ids.append(self.__ner_alphabet.get_index(ner))
 
-
-            print('NEEERRRR', ner_tags)
 
         return NERInstance(Sentence(words, word_ids, char_seqs, char_id_seqs),
                            postags, pos_ids, chunk_tags, chunk_ids, ner_tags, ner_ids)
