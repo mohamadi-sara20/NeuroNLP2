@@ -70,12 +70,21 @@ class CoNLLXReader(object):
 
             word = DIGIT_RE.sub("0", tokens[1]) if normalize_digits else tokens[1]
             # TODO: Be careful with indices when training using new data. 
-            pos = tokens[5]
+            
             # print('POS', pos)
-            head = int(tokens[9])
+            # print('@@@@@@@', tokens)
+            if tokens[6] != '_':
+                head = int(tokens[6])
+                ttype = (tokens[7])
+                pos = tokens[4]
+            else:
+                head = int(tokens[7])
+                ttype = (tokens[8])
+                pos = tokens[5]
+                
             # print("HEAD", head)
             ### TODO: This should be changed later, to extract the type from a conll row. Hard-coded for now. 
-            ttype = (tokens[11])
+            
             # print('type', ttype)
 
             words.append(word)

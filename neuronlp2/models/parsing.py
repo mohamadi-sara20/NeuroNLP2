@@ -801,11 +801,11 @@ class BiRecurrentConvBiAffine(nn.Module):
         self.bilinear = BiLinear(type_space, type_space, self.num_labels)
     
     def _write_new_line(self, path):
-        f_arc_dep = path+'arc_depssssss'
-        f_arc_head = path+'arc_headsssss'
-        f_lstm_out = path+'lstm_outsssss'
-        f_rel_dep = path+'rel_depssssss'
-        f_rel_head = path+'rel_headsssss'
+        f_arc_dep = path+'arc_deps_udt'
+        f_arc_head = path+'arc_head_udt'
+        f_lstm_out = path+'lstm_outs_udt'
+        f_rel_dep = path+'rel_deps_udt'
+        f_rel_head = path+'rel_head_udt'
 
         f = open(f_arc_dep, 'a')
         f.write('\n')
@@ -828,11 +828,11 @@ class BiRecurrentConvBiAffine(nn.Module):
         f.close()
 
     def _write_the_output(self, path, word, arc_dep, arc_head, lstm_out, rel_dep, rel_head):
-        f_arc_dep = path+'arc_depssssss'
-        f_arc_head = path+'arc_headsssss'
-        f_lstm_out = path+'lstm_outsssss'
-        f_rel_dep = path+'rel_depssssss'
-        f_rel_head = path+'rel_headsssss'
+        f_arc_dep = path+'arc_deps_udt'
+        f_arc_head = path+'arc_heads_udt'
+        f_lstm_out = path+'lstm_outs_udt'
+        f_rel_dep = path+'rel_deps_udt'
+        f_rel_head = path+'rel_heads_udt'
 
         # print(">>>>>>>>>>>>>", word)
 
