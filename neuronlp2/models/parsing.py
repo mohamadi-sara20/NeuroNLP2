@@ -800,13 +800,19 @@ class BiRecurrentConvBiAffine(nn.Module):
         self.type_c = nn.Linear(out_dim, type_space)
         self.bilinear = BiLinear(type_space, type_space, self.num_labels)
     
-    def _write_new_line(self, path):
-        f_arc_dep = path+'arc_deps_udt'
-        f_arc_head = path+'arc_head_udt'
-        f_lstm_out = path+'lstm_outs_udt'
-        f_rel_dep = path+'rel_deps_udt'
-        f_rel_head = path+'rel_head_udt'
-
+    def _write_new_line(self, path, output_dir):
+        # f_arc_dep = path+'arc_dep_udtout2'
+        # f_arc_head = path+'arc_head_udtout2'
+        # f_lstm_out = path+'lstm_out_udtout2'
+        # f_rel_dep = path+'rel_dep_udtout2'
+        # f_rel_head = path+'rel_head_udtout2'
+        
+        f_arc_dep = output_dir + 'arc_dep'
+        f_arc_head = output_dir + 'arc_head'
+        f_lstm_out = output_dir + 'lstm_out'
+        f_rel_dep = output_dir + 'rel_dep'
+        f_rel_head = output_dir + 'rel_head'
+        
         f = open(f_arc_dep, 'a')
         f.write('\n')
         f.close()
@@ -827,13 +833,12 @@ class BiRecurrentConvBiAffine(nn.Module):
         f.write('\n')
         f.close()
 
-    def _write_the_output(self, path, word, arc_dep, arc_head, lstm_out, rel_dep, rel_head):
-        f_arc_dep = path+'arc_deps_udt'
-        f_arc_head = path+'arc_heads_udt'
-        f_lstm_out = path+'lstm_outs_udt'
-        f_rel_dep = path+'rel_deps_udt'
-        f_rel_head = path+'rel_heads_udt'
-
+    def _write_the_output(self, path, word, arc_dep, arc_head, lstm_out, rel_dep, rel_head, output_dir):
+        f_arc_dep = output_dir + 'arc_dep'
+        f_arc_head = output_dir + 'arc_head'
+        f_lstm_out = output_dir + 'lstm_out'
+        f_rel_dep = output_dir + 'rel_dep'
+        f_rel_head = output_dir + 'rel_head'
         # print(">>>>>>>>>>>>>", word)
 
         f = open(f_arc_dep, 'a')
@@ -849,11 +854,11 @@ class BiRecurrentConvBiAffine(nn.Module):
         f.close()
 
         f = open(f_rel_dep, 'a')
-        f.write(word+' '+' '.join([str(float(a)) for a in rel_dep])+'\n')
+        f.write(word + ' ' + ' '.join([str(float(a)) for a in rel_dep])+'\n')
         f.close()
         
         f = open(f_rel_head, 'a')
-        f.write(word+' '+' '.join([str(float(a)) for a in rel_head])+'\n')
+        f.write(word + ' ' + ' '.join([str(float(a)) for a in rel_head])+'\n')
         f.close()
 
     def get_syntax_feature(self, input_word, input_char, input_pos, mask=None, length=None, hx=None):
@@ -863,7 +868,7 @@ class BiRecurrentConvBiAffine(nn.Module):
         word = self.dropout_in(word)
 
         input = word
-
+       
         if self.char:
             # [batch, length, char_length, char_dim]
             char = self.char_embedd(input_char)
@@ -911,13 +916,12 @@ class BiRecurrentConvBiAffine(nn.Module):
 
         return torch.cat([arc_c, type_c, arc_h, type_h], dim=2)
 
-    def _get_rnn_output(self, input_word, input_char, input_pos, mask=None, length=None, hx=None):
+    def _get_rnn_output(self, input_word, input_char, input_pos, original_words=None, mask=None, length=None, hx=None, output_dir='./'):
+        
         # [batch, length, word_dim]
         word = self.word_embedd(input_word)
         # apply dropout on input
         word = self.dropout_in(word)
-        
-
         input = word
 
         if self.char:
@@ -967,22 +971,37 @@ class BiRecurrentConvBiAffine(nn.Module):
         # dep, head, out, dep, head
         # print("data", input_word.data[0])
         for i in range(len(input_word.data[0])):
-            if input_word.data[0][i] == 2 or input_word.data[0][i] == 1 or input_word.data[0][i] == 0:
+            # if input_word.data[0][i] == 2 or input_word.data[0][i] == 1 or input_word.data[0][i] == 0:
+            if input_word.data[0][i] == 2 or input_word.data[0][i] == 1:
                 continue
-            # if self.original_words is not None:
-            #     english_word = original_words[i]
-            # else:
-            #     english_word = self.id2word[input_word.data[0][i]]
             
+            if original_words is not None:
+                english_word = original_words[i]
+            elif self.original_words is not None: 
+                english_word = self.original_words[i]
+            else:
+                english_word = self.id2word[int(input_word.data[0][i])]
+                
             # ignore original_words and always use id2word
 
-            english_word = self.id2word[int(input_word.data[0][i])]
+            # try:
+            #     english_word = self.id2word[int(input_word.data[0][i])]
+            #     print('JJJ', int(input_word.data[0][i]))
+            # except:
+            #     print('KK', int(input_word.data[0][i]))
+            #     print('WORD', input_word.data[0])
+                
 
-            self._write_the_output(self.path, english_word,
-                    arc_c.data[0][i], arc_h.data[0][i],
-                    lstm_out.data[0][i],
-                    type_c.data[0][i], type_h.data[0][i])
-        self._write_new_line(self.path)
+            self._write_the_output(self.path, 
+                                   english_word,
+                                   arc_c.data[0][i], 
+                                   arc_h.data[0][i],
+                                   lstm_out.data[0][i],
+                                   type_c.data[0][i], type_h.data[0][i],
+                                   output_dir=output_dir
+            ) 
+        self._write_new_line(self.path,
+            output_dir=output_dir)
 
         # apply dropout
         # [batch, length, dim] --> [batch, 2 * length, dim]

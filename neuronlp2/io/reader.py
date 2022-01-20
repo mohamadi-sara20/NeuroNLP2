@@ -73,20 +73,27 @@ class CoNLLXReader(object):
             
             # print('POS', pos)
             # print('@@@@@@@', tokens)
-            if tokens[6] != '_':
-                head = int(tokens[6])
-                ttype = (tokens[7])
-                pos = tokens[4]
-            else:
-                head = int(tokens[7])
-                ttype = (tokens[8])
-                pos = tokens[5]
+            # if tokens[6] != '_':
+                # head = int(tokens[6])
+                # ttype = (tokens[7])
+                # pos = tokens[4]
+            # else:
+                # head = int(tokens[7])
+                # ttype = (tokens[8])
+                # pos = tokens[5]
+                
+            # de training
+            head = int(tokens[6])
+            ttype = (tokens[7])
+            pos = tokens[4]
+            
                 
             # print("HEAD", head)
             ### TODO: This should be changed later, to extract the type from a conll row. Hard-coded for now. 
             
             # print('type', ttype)
-
+            
+            
             words.append(word)
             word_ids.append(self.__word_alphabet.get_index(word))
 

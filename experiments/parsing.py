@@ -1,6 +1,7 @@
 """
 Implementation of Graph-based dependency parsing.
 """
+from cgi import test
 import torch
 
 import os
@@ -221,7 +222,6 @@ def train(args):
     json.dump(hyps, open(os.path.join(model_path, 'config.json'), 'w'), indent=2)
     model_type = hyps['model']
     print('##############WD', word_dim)
-
     print('##############CONFIG', word_dim)
 
     assert model_type in ['ConvBiAffine', 'DeepBiAffine', 'NeuroMST', 'StackPtr']
@@ -260,6 +260,7 @@ def train(args):
                                num_filters, kernel_size, mode, hidden_size, num_layers, num_types, arc_space, type_space,
                                embedd_word=word_table, embedd_char=char_table,
                                p_in=p_in, p_out=p_out, p_rnn=p_rnn, pos=use_pos)
+        
         id2word = {v: k for k, v in word_alphabet.instance2index.items()}
         network.id2word = id2word
         network.original_words = id2word.values()
@@ -298,7 +299,14 @@ def train(args):
     if alg == 'graph':
         data_train = conllx_data.read_bucketed_data(train_path, word_alphabet, char_alphabet, pos_alphabet, type_alphabet, symbolic_root=True)
         data_dev = conllx_data.read_data(dev_path, word_alphabet, char_alphabet, pos_alphabet, type_alphabet, symbolic_root=True)
-        data_test = conllx_data.read_data(test_path, word_alphabet, char_alphabet, pos_alphabet, type_alphabet, symbolic_root=True)
+        data_test = conllx_data.read_data(test_path, word_alphabet, char_alphabet, pos_alphabet, type_alphabet, symbolic_root=True)    
+        id2word = {v: k for k, v in word_alphabet.instance2index.items()}
+        network.id2word = id2word
+        data_train_flat = [item for sublist in data_train[-1] for item in sublist]
+        data_dev_flat = [item for sublist in data_dev[-1] for item in sublist]
+        data_test_flat = [item for sublist in data_test[-1] for item in sublist]
+        network.original_words = data_train_flat + data_dev_flat + data_test_flat
+        
     else:
         data_train = conllx_stacked_data.read_bucketed_data(train_path, word_alphabet, char_alphabet, pos_alphabet, type_alphabet, prior_order=prior_order)
         data_dev = conllx_stacked_data.read_data(dev_path, word_alphabet, char_alphabet, pos_alphabet, type_alphabet, prior_order=prior_order)
@@ -633,8 +641,6 @@ def parse(args):
     else:
         data_test = conllx_stacked_data.read_data(test_path, word_alphabet, char_alphabet, pos_alphabet, type_alphabet, prior_order=prior_order)
 
-
-
     beam = args.beam
     pred_writer = CoNLLXWriter(word_alphabet, char_alphabet, pos_alphabet, type_alphabet)
     gold_writer = CoNLLXWriter(word_alphabet, char_alphabet, pos_alphabet, type_alphabet)
@@ -643,9 +649,20 @@ def parse(args):
     gold_filename = os.path.join(result_path, 'gold.txt')
     gold_writer.start(gold_filename)
     network.eval()
-
-    for i in range(len(data_test)-1):
-        network._get_rnn_output( data_test[i]['WORD'],data_test[i]['CHAR'],data_test[i]['POS'])
+    
+    
+    
+    directory, filename = test_path.split('/')
+    filename = filename.split('.')[0]
+    output_dir = f'{directory}/{filename}/'
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+    for i in range(len(data_test)-2):
+        network._get_rnn_output(output_dir=output_dir,
+                                input_word=data_test[i]['WORD'],
+                                input_char=data_test[i]['CHAR'],
+                                input_pos=data_test[i]['POS'],
+                                original_words=data_test[-1][i])
         # network.forward()
     # with torch.no_grad():
     #     print('Parsing...')
