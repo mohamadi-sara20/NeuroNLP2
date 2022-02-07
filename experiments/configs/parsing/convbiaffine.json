@@ -1,5 +1,5 @@
 {
-  "model": "DeepBiAffine",
+  "model": "ConvBiAffine",
   "word_dim": 300,
   "char_dim": 100,
   "pos": true,
@@ -12,5 +12,6 @@
   "p_in": 0.33,
   "p_out": 0.33,
   "p_rnn": [0.33, 0.33],
-  "activation": "elu"
+  "num_filters": 20,
+  "kernel_size": 60
 }

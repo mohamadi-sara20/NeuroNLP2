@@ -36,6 +36,9 @@ def load_embedding_dict(embedding, embedding_path, normalize_digits=True):
                 if embedd_dim < 0:
                     embedd_dim = len(tokens) - 1
                 else:
+                    # print('eeeee',embedd_dim)
+                    # print('eee222',len(tokens))
+
                     assert (embedd_dim + 1 == len(tokens))
                 embedd = np.empty([1, embedd_dim], dtype=np.float32)
                 embedd[:] = tokens[1:]
@@ -56,6 +59,9 @@ def load_embedding_dict(embedding, embedding_path, normalize_digits=True):
                 if embedd_dim < 0:
                     embedd_dim = len(tokens) - 1
                 else:
+                    # print('eeeee',embedd_dim)
+                    # print('eee222',len(tokens))
+
                     assert (embedd_dim + 1 == len(tokens))
                 embedd = np.empty([1, embedd_dim], dtype=np.float32)
                 embedd[:] = tokens[1:]

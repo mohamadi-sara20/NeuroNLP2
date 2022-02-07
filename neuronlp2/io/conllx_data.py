@@ -137,6 +137,7 @@ def create_alphabets(alphabet_directory, train_path, data_paths=None, max_vocabu
 
 def read_data(source_path: str, word_alphabet: Alphabet, char_alphabet: Alphabet, pos_alphabet: Alphabet, type_alphabet: Alphabet,
               max_size=None, normalize_digits=True, symbolic_root=False, symbolic_end=False):
+    original_words = []
     data = []
     max_length = 0
     max_char_length = 0
@@ -150,6 +151,7 @@ def read_data(source_path: str, word_alphabet: Alphabet, char_alphabet: Alphabet
             print("reading data: %d" % counter)
 
         sent = inst.sentence
+        original_words.append(sent.words)
         data.append([sent.word_ids, sent.char_id_seqs, inst.pos_ids, inst.heads, inst.type_ids])
         max_len = max([len(char_seq) for char_seq in sent.char_seqs])
         if max_char_length < max_len:
@@ -209,11 +211,12 @@ def read_data(source_path: str, word_alphabet: Alphabet, char_alphabet: Alphabet
 
     data_tensor = {'WORD': words, 'CHAR': chars, 'POS': pos, 'HEAD': heads, 'TYPE': types,
                    'MASK': masks, 'SINGLE': single, 'LENGTH': lengths}
-    return data_tensor, data_size
+    return data_tensor, data_size, original_words
 
 
 def read_bucketed_data(source_path: str, word_alphabet: Alphabet, char_alphabet: Alphabet, pos_alphabet: Alphabet, type_alphabet: Alphabet,
                        max_size=None, normalize_digits=True, symbolic_root=False, symbolic_end=False):
+    original_words = []
     data = [[] for _ in _buckets]
     max_char_length = [0 for _ in _buckets]
     print('Reading data from %s' % source_path)
@@ -227,6 +230,7 @@ def read_bucketed_data(source_path: str, word_alphabet: Alphabet, char_alphabet:
 
         inst_size = inst.length()
         sent = inst.sentence
+        original_words.append(sent.words)
         for bucket_id, bucket_size in enumerate(_buckets):
             if inst_size < bucket_size:
                 data[bucket_id].append([sent.word_ids, sent.char_id_seqs, inst.pos_ids, inst.heads, inst.type_ids])
@@ -297,4 +301,4 @@ def read_bucketed_data(source_path: str, word_alphabet: Alphabet, char_alphabet:
         data_tensor = {'WORD': words, 'CHAR': chars, 'POS': pos, 'HEAD': heads, 'TYPE': types,
                        'MASK': masks, 'SINGLE': single, 'LENGTH': lengths}
         data_tensors.append(data_tensor)
-    return data_tensors, bucket_sizes
+    return data_tensors, bucket_sizes, original_words

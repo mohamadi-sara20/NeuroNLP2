@@ -57,6 +57,8 @@ class CoNLLXReader(object):
             heads.append(0)
 
         for tokens in lines:
+            if tokens == []:
+                print('9999999')
             chars = []
             char_ids = []
             for char in tokens[1]:
@@ -69,18 +71,42 @@ class CoNLLXReader(object):
             char_id_seqs.append(char_ids)
 
             word = DIGIT_RE.sub("0", tokens[1]) if normalize_digits else tokens[1]
-            pos = tokens[4]
-            head = int(tokens[6])
-            type = tokens[7]
-
+            # TODO: Be careful with indices when training using new data. 
+            
+            # print('POS', pos)
+            # print('@@@@@@@', tokens)
+            # if tokens[6] != '_':
+            try:
+                head = int(tokens[6])
+                ttype = (tokens[7])
+                pos= tokens[4]
+            except Exception:
+                print(tokens)
+            # else:
+            #     head = int(tokens[7])
+            #     ttype = (tokens[8])
+            #     pos = tokens[5]
+                
+            # # de training
+            # head = int(tokens[6])
+            # ttype = (tokens[7])
+            # pos = tokens[4]
+            
+                
+            # print("HEAD", head)
+            ### TODO: This should be changed later, to extract the type from a conll row. Hard-coded for now. 
+            
+            # print('type', ttype)
+            
+            
             words.append(word)
             word_ids.append(self.__word_alphabet.get_index(word))
 
             postags.append(pos)
             pos_ids.append(self.__pos_alphabet.get_index(pos))
 
-            types.append(type)
-            type_ids.append(self.__type_alphabet.get_index(type))
+            types.append(ttype)
+            type_ids.append(self.__type_alphabet.get_index(ttype))
 
             heads.append(head)
 
@@ -121,7 +147,7 @@ class CoNLL03Reader(object):
         lines = []
         while len(line.strip()) > 0:
             line = line.strip()
-            lines.append(line.split(' '))
+            lines.append(line.split('\t'))
             line = self.__source_file.readline()
 
         length = len(lines)
@@ -167,6 +193,7 @@ class CoNLL03Reader(object):
 
             ner_tags.append(ner)
             ner_ids.append(self.__ner_alphabet.get_index(ner))
+
 
         return NERInstance(Sentence(words, word_ids, char_seqs, char_id_seqs),
                            postags, pos_ids, chunk_tags, chunk_ids, ner_tags, ner_ids)

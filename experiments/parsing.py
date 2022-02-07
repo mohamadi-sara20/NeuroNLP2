@@ -1,6 +1,8 @@
 """
 Implementation of Graph-based dependency parsing.
 """
+from cgi import test
+import torch
 
 import os
 import sys
@@ -10,24 +12,22 @@ import json
 current_path = os.path.dirname(os.path.realpath(__file__))
 root_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.append(root_path)
-
 import time
 import argparse
 import math
 import numpy as np
 import torch
-from torch.optim.adamw import AdamW
 from torch.optim import SGD
 from torch.nn.utils import clip_grad_norm_
 from neuronlp2.nn.utils import total_grad_norm
 from neuronlp2.io import get_logger, conllx_data, conllx_stacked_data, iterate_data
-from neuronlp2.models import DeepBiAffine, NeuroMST, StackPtrNet
-from neuronlp2.optim import ExponentialScheduler
+from neuronlp2.models import DeepBiAffine, NeuroMST, StackPtrNet, BiRecurrentConvBiAffine
+from neuronlp2.optim import ExponentialScheduler 
 from neuronlp2 import utils
 from neuronlp2.io import CoNLLXWriter
 from neuronlp2.tasks import parser
 from neuronlp2.nn.utils import freeze_embedding
-
+from torch.optim.adamw import AdamW
 
 def get_optimizer(parameters, optim, learning_rate, lr_decay, betas, eps, amsgrad, weight_decay, warmup_steps):
     if optim == 'sgd':
@@ -56,6 +56,7 @@ def eval(alg, data, network, pred_writer, gold_writer, punct_set, word_alphabet,
     accum_total_inst = 0.0
     for data in iterate_data(data, batch_size):
         words = data['WORD'].to(device)
+        # print('##########', words)
         chars = data['CHAR'].to(device)
         postags = data['POS'].to(device)
         heads = data['HEAD'].numpy()
@@ -107,7 +108,6 @@ def eval(alg, data, network, pred_writer, gold_writer, punct_set, word_alphabet,
     return (accum_ucorr, accum_lcorr, accum_ucomlpete, accum_lcomplete, accum_total), \
            (accum_ucorr_nopunc, accum_lcorr_nopunc, accum_ucomlpete_nopunc, accum_lcomplete_nopunc, accum_total_nopunc), \
            (accum_root_corr, accum_total_root, accum_total_inst)
-
 
 def train(args):
     logger = get_logger("Parsing")
@@ -221,8 +221,12 @@ def train(args):
     hyps = json.load(open(args.config, 'r'))
     json.dump(hyps, open(os.path.join(model_path, 'config.json'), 'w'), indent=2)
     model_type = hyps['model']
-    assert model_type in ['DeepBiAffine', 'NeuroMST', 'StackPtr']
+    print('##############WD', word_dim)
+    print('##############CONFIG', word_dim)
+
+    assert model_type in ['ConvBiAffine', 'DeepBiAffine', 'NeuroMST', 'StackPtr']
     assert word_dim == hyps['word_dim']
+
     if char_dim is not None:
         assert char_dim == hyps['char_dim']
     else:
@@ -239,6 +243,8 @@ def train(args):
     activation = hyps['activation']
     prior_order = None
 
+   
+        
     alg = 'transition' if model_type == 'StackPtr' else 'graph'
     if model_type == 'DeepBiAffine':
         num_layers = hyps['num_layers']
@@ -246,12 +252,26 @@ def train(args):
                                mode, hidden_size, num_layers, num_types, arc_space, type_space,
                                embedd_word=word_table, embedd_char=char_table,
                                p_in=p_in, p_out=p_out, p_rnn=p_rnn, pos=use_pos, activation=activation)
+    elif model_type == 'ConvBiAffine':
+        num_layers = hyps['num_layers']
+        num_filters = hyps['num_filters']
+        kernel_size = hyps['kernel_size']
+        network = BiRecurrentConvBiAffine(word_dim, num_words, char_dim, num_chars, pos_dim, num_pos,
+                               num_filters, kernel_size, mode, hidden_size, num_layers, num_types, arc_space, type_space,
+                               embedd_word=word_table, embedd_char=char_table,
+                               p_in=p_in, p_out=p_out, p_rnn=p_rnn, pos=use_pos)
+        
+        id2word = {v: k for k, v in word_alphabet.instance2index.items()}
+        network.id2word = id2word
+        network.original_words = id2word.values()
     elif model_type == 'NeuroMST':
         num_layers = hyps['num_layers']
         network = NeuroMST(word_dim, num_words, char_dim, num_chars, pos_dim, num_pos,
                            mode, hidden_size, num_layers, num_types, arc_space, type_space,
                            embedd_word=word_table, embedd_char=char_table,
                            p_in=p_in, p_out=p_out, p_rnn=p_rnn, pos=use_pos, activation=activation)
+       
+        
     elif model_type == 'StackPtr':
         encoder_layers = hyps['encoder_layers']
         decoder_layers = hyps['decoder_layers']
@@ -279,7 +299,14 @@ def train(args):
     if alg == 'graph':
         data_train = conllx_data.read_bucketed_data(train_path, word_alphabet, char_alphabet, pos_alphabet, type_alphabet, symbolic_root=True)
         data_dev = conllx_data.read_data(dev_path, word_alphabet, char_alphabet, pos_alphabet, type_alphabet, symbolic_root=True)
-        data_test = conllx_data.read_data(test_path, word_alphabet, char_alphabet, pos_alphabet, type_alphabet, symbolic_root=True)
+        data_test = conllx_data.read_data(test_path, word_alphabet, char_alphabet, pos_alphabet, type_alphabet, symbolic_root=True)    
+        id2word = {v: k for k, v in word_alphabet.instance2index.items()}
+        network.id2word = id2word
+        data_train_flat = [item for sublist in data_train[-1] for item in sublist]
+        data_dev_flat = [item for sublist in data_dev[-1] for item in sublist]
+        data_test_flat = [item for sublist in data_test[-1] for item in sublist]
+        network.original_words = data_train_flat + data_dev_flat + data_test_flat
+        
     else:
         data_train = conllx_stacked_data.read_bucketed_data(train_path, word_alphabet, char_alphabet, pos_alphabet, type_alphabet, prior_order=prior_order)
         data_dev = conllx_stacked_data.read_data(dev_path, word_alphabet, char_alphabet, pos_alphabet, type_alphabet, prior_order=prior_order)
@@ -456,6 +483,8 @@ def train(args):
 
                 best_epoch = epoch
                 patient = 0
+
+                print('HERE BEFORE TRAINING')
                 torch.save(network.state_dict(), model_name)
 
                 pred_filename = os.path.join(result_path, 'pred_test%d' % epoch)
@@ -546,7 +575,8 @@ def parse(args):
     logger.info("loading network...")
     hyps = json.load(open(os.path.join(model_path, 'config.json'), 'r'))
     model_type = hyps['model']
-    assert model_type in ['DeepBiAffine', 'NeuroMST', 'StackPtr']
+    print(model_type)
+    assert model_type in ['DeepBiAffine', 'NeuroMST', 'StackPtr', 'ConvBiAffine']
     word_dim = hyps['word_dim']
     char_dim = hyps['char_dim']
     use_pos = hyps['pos']
@@ -561,12 +591,26 @@ def parse(args):
     activation = hyps['activation']
     prior_order = None
 
+
+
     alg = 'transition' if model_type == 'StackPtr' else 'graph'
     if model_type == 'DeepBiAffine':
         num_layers = hyps['num_layers']
         network = DeepBiAffine(word_dim, num_words, char_dim, num_chars, pos_dim, num_pos,
                                mode, hidden_size, num_layers, num_types, arc_space, type_space,
                                p_in=p_in, p_out=p_out, p_rnn=p_rnn, pos=use_pos, activation=activation)
+
+    elif model_type == 'ConvBiAffine':
+        num_layers = hyps['num_layers']
+        network = BiRecurrentConvBiAffine(word_dim=word_dim, num_words=num_words, char_dim=char_dim, num_chars=num_chars,
+                                          pos_dim=pos_dim, num_pos=num_pos,
+                                          hidden_size=hidden_size, num_layers=num_layers, num_labels=num_types,
+                                          p_in=p_in, p_out=p_out, p_rnn=p_rnn, pos=use_pos, arc_space=arc_space, type_space=type_space,
+                                          kernel_size=hyps['kernel_size'], rnn_mode=hyps["rnn_mode"],
+                                          num_filters=hyps['num_filters'])
+        id2word = {v: k for k, v in word_alphabet.instance2index.items()}
+        network.id2word = id2word
+        network.original_words = id2word.values()
     elif model_type == 'NeuroMST':
         num_layers = hyps['num_layers']
         network = NeuroMST(word_dim, num_words, char_dim, num_chars, pos_dim, num_pos,
@@ -579,7 +623,7 @@ def parse(args):
         prior_order = hyps['prior_order']
         grandPar = hyps['grandPar']
         sibling = hyps['sibling']
-        network = StackPtrNet(word_dim, num_words, char_dim, num_chars, pos_dim, num_pos,
+        network = StackPtrNet(word_dim, num_words, char_dim, num_chars, num_pos,
                               mode, hidden_size, encoder_layers, decoder_layers, num_types, arc_space, type_space,
                               prior_order=prior_order, activation=activation, p_in=p_in, p_out=p_out, p_rnn=p_rnn,
                               pos=use_pos, grandPar=grandPar, sibling=sibling)
@@ -604,15 +648,30 @@ def parse(args):
     pred_writer.start(pred_filename)
     gold_filename = os.path.join(result_path, 'gold.txt')
     gold_writer.start(gold_filename)
-
-    with torch.no_grad():
-        print('Parsing...')
-        start_time = time.time()
-        eval(alg, data_test, network, pred_writer, gold_writer, punct_set, word_alphabet, pos_alphabet, device, beam, batch_size=args.batch_size)
-        print('Time: %.2fs' % (time.time() - start_time))
-
+    network.eval()
+    
+    
+    
+    directory, filename = test_path.split('/')
+    filename = filename.split('.')[0]
+    output_dir = f'{directory}/{filename}/'
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+    for i in range(len(data_test)-2):
+        network._get_rnn_output(output_dir=output_dir,
+                                input_word=data_test[i]['WORD'],
+                                input_char=data_test[i]['CHAR'],
+                                input_pos=data_test[i]['POS'],
+                                original_words=data_test[-1][i])
+        # network.forward()
+    # with torch.no_grad():
+    #     print('Parsing...')
+    #     start_time = time.time()
+    #     eval(alg, data_test, network, pred_writer, gold_writer, punct_set, word_alphabet, pos_alphabet, device, beam, batch_size=args.batch_size)
+    #     print('Time: %.2fs' % (time.time() - start_time))
     pred_writer.close()
     gold_writer.close()
+
 
 
 if __name__ == '__main__':
@@ -648,6 +707,7 @@ if __name__ == '__main__':
 
     args = args_parser.parse_args()
     if args.mode == 'train':
+
         train(args)
     else:
         parse(args)

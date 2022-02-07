@@ -5,7 +5,7 @@ import torch
 
 
 def get_batch(data, batch_size, unk_replace=0.):
-    data, data_size = data
+    data, data_size,_ = data
     batch_size = min(data_size, batch_size)
     index = torch.randperm(data_size).long()[:batch_size]
 
@@ -68,7 +68,7 @@ def get_bucketed_batch(data, batch_size, unk_replace=0.):
 
 
 def iterate_batch(data, batch_size, unk_replace=0., shuffle=False):
-    data, data_size = data
+    data, data_size,_ = data
 
     words = data['WORD']
     single = data['SINGLE']
@@ -101,7 +101,7 @@ def iterate_batch(data, batch_size, unk_replace=0., shuffle=False):
 
 
 def iterate_bucketed_batch(data, batch_size, unk_replace=0., shuffle=False):
-    data_tensor, bucket_sizes = data
+    data_tensor, bucket_sizes,_ = data
 
     bucket_indices = np.arange(len(bucket_sizes))
     if shuffle:
@@ -119,6 +119,7 @@ def iterate_bucketed_batch(data, batch_size, unk_replace=0., shuffle=False):
         words = data['WORD']
         single = data['SINGLE']
         bucket_length = words.size(1)
+        # unk_replace=False
         if unk_replace:
             ones = single.new_ones(bucket_size, bucket_length)
             noise = single.new_empty(bucket_size, bucket_length).bernoulli_(unk_replace).long()
