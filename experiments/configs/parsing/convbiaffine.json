@@ -13,5 +13,6 @@
   "p_out": 0.33,
   "p_rnn": [0.33, 0.33],
   "num_filters": 20,
-  "kernel_size": 60
+  "kernel_size": 60,
+  "activation": "elu"
 }

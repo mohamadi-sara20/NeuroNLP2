@@ -18,6 +18,16 @@ class CoNLLXReader(object):
         self.__source_file.close()
 
     def getNext(self, normalize_digits=True, symbolic_root=False, symbolic_end=False):
+        words = []
+        word_ids = []
+        char_seqs = []
+        char_id_seqs = []
+        postags = []
+        pos_ids = []
+        types = []
+        type_ids = []
+        heads = []
+
         line = self.__source_file.readline()
         # skip multiple blank lines.
         while len(line) > 0 and len(line.strip()) == 0:
@@ -35,15 +45,6 @@ class CoNLLXReader(object):
         if length == 0:
             return None
 
-        words = []
-        word_ids = []
-        char_seqs = []
-        char_id_seqs = []
-        postags = []
-        pos_ids = []
-        types = []
-        type_ids = []
-        heads = []
 
         if symbolic_root:
             words.append(ROOT)
@@ -137,6 +138,17 @@ class CoNLL03Reader(object):
         self.__source_file.close()
 
     def getNext(self, normalize_digits=True):
+        words = []
+        word_ids = []
+        char_seqs = []
+        char_id_seqs = []
+        postags = []
+        pos_ids = []
+        chunk_tags = []
+        chunk_ids = []
+        ner_tags = []
+        ner_ids = []
+        
         line = self.__source_file.readline()
         # skip multiple blank lines.
         while len(line) > 0 and len(line.strip()) == 0:
@@ -154,16 +166,7 @@ class CoNLL03Reader(object):
         if length == 0:
             return None
 
-        words = []
-        word_ids = []
-        char_seqs = []
-        char_id_seqs = []
-        postags = []
-        pos_ids = []
-        chunk_tags = []
-        chunk_ids = []
-        ner_tags = []
-        ner_ids = []
+       
 
         for tokens in lines:
             chars = []
