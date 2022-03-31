@@ -10,8 +10,6 @@ import sys
 import gc
 import json
 
-from neuronlp2 import optim
-
 current_path = os.path.dirname(os.path.realpath(__file__))
 root_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.append(root_path)
