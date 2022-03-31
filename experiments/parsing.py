@@ -2,12 +2,15 @@
 Implementation of Graph-based dependency parsing.
 """
 from cgi import test
+from subprocess import check_output
 import torch
 
 import os
 import sys
 import gc
 import json
+
+from neuronlp2 import optim
 
 current_path = os.path.dirname(os.path.realpath(__file__))
 root_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -142,6 +145,10 @@ def train(args):
     word_path = args.word_path
     char_embedding = args.char_embedding
     char_path = args.char_path
+    
+    load_model = args.load_model
+    ckp_path = args.checkpoint_fpath
+    
 
     print(args)
 
@@ -221,9 +228,6 @@ def train(args):
     hyps = json.load(open(args.config, 'r'))
     json.dump(hyps, open(os.path.join(model_path, 'config.json'), 'w'), indent=2)
     model_type = hyps['model']
-    print('##############WD', word_dim)
-    print('##############CONFIG', word_dim)
-
     assert model_type in ['ConvBiAffine', 'DeepBiAffine', 'NeuroMST', 'StackPtr']
     assert word_dim == hyps['word_dim']
 
@@ -358,7 +362,14 @@ def train(args):
         opt_info = 'adam, betas=(%.1f, %.3f), eps=%.1e, amsgrad=%s' % (betas[0], betas[1], eps, amsgrad)
     else:
         opt_info = 'sgd, momentum=0.9, nesterov=True'
-    for epoch in range(1, num_epochs + 1):
+        
+    
+    start_epoch = 1
+    if load_model:
+        print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Loading Partially Trained Model')
+        network, optimizer, start_epoch = load_ckp(ckp_path, network, optimizer)
+         
+    for epoch in range(start_epoch, num_epochs + 1):
         start_time = time.time()
         train_loss = 0.
         train_arc_loss = 0.
@@ -446,6 +457,8 @@ def train(args):
                                                                                                        train_type_loss / num_insts, train_type_loss / num_words,
                                                                                                        time.time() - start_time))
         print('-' * 125)
+        
+        
 
         # evaluate performance on dev data
         with torch.no_grad():
@@ -484,8 +497,16 @@ def train(args):
                 best_epoch = epoch
                 patient = 0
 
-                print('HERE BEFORE TRAINING')
                 torch.save(network.state_dict(), model_name)
+                
+                checkpoint = {
+                        'epoch': epoch + 1,
+                        'state_dict': network.state_dict(),
+                        'optimizer': optimizer.state_dict()
+                }
+        
+                save_ckp(checkpoint, model_path)
+                
 
                 pred_filename = os.path.join(result_path, 'pred_test%d' % epoch)
                 pred_writer.start(pred_filename)
@@ -535,6 +556,18 @@ def train(args):
                 network.load_state_dict(torch.load(model_name, map_location=device))
                 scheduler.reset_state()
                 patient = 0
+
+
+
+def save_ckp(state, checkpoint_dir):
+    f_path = checkpoint_dir + 'checkpoint.pt'
+    torch.save(state, f_path)
+
+def load_ckp(checkpoint_fpath, model, optimizer):
+    checkpoint = torch.load(checkpoint_fpath)
+    model.load_state_dict(checkpoint['state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer'])
+    return model, optimizer, checkpoint['epoch']
 
 
 def parse(args):
@@ -704,10 +737,12 @@ if __name__ == '__main__':
     args_parser.add_argument('--dev', help='path for dev file.')
     args_parser.add_argument('--test', help='path for test file.', required=True)
     args_parser.add_argument('--model_path', help='path for saving model file.', required=True)
+    args_parser.add_argument('--load_model', default=False)
+    args_parser.add_argument('--checkpoint_fpath')
+
 
     args = args_parser.parse_args()
     if args.mode == 'train':
-
         train(args)
     else:
         parse(args)
