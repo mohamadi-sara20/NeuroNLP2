@@ -80,9 +80,23 @@ class CoNLLXReader(object):
             try:
                 head = int(tokens[6])
                 ttype = (tokens[7])
-                pos= tokens[4]
+                pos = tokens[4]
+                
+                if pos == '_':
+                    pos = '$,'
+                    print('pos is undefined ')
+                    # print('head', head)
+                    # print('type', ttype)
+                    print('pos', pos)
+                if ttype == '_':
+                    print('dep rel is undefined ')
+                    print('head', head)
+                    print('type', ttype)
+                    # print('pos', pos)
             except Exception:
                 print(tokens)
+               
+                
             # else:
             #     head = int(tokens[7])
             #     ttype = (tokens[8])

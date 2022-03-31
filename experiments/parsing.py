@@ -362,14 +362,14 @@ def train(args):
         opt_info = 'adam, betas=(%.1f, %.3f), eps=%.1e, amsgrad=%s' % (betas[0], betas[1], eps, amsgrad)
     else:
         opt_info = 'sgd, momentum=0.9, nesterov=True'
-        
-    
+            
     start_epoch = 1
     if load_model:
-        print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Loading Partially Trained Model')
+        print('##################################################################### Loading Partially Trained Model')
         network, optimizer, start_epoch = load_ckp(ckp_path, network, optimizer)
          
     for epoch in range(start_epoch, num_epochs + 1):
+
         start_time = time.time()
         train_loss = 0.
         train_arc_loss = 0.
@@ -739,7 +739,6 @@ if __name__ == '__main__':
     args_parser.add_argument('--model_path', help='path for saving model file.', required=True)
     args_parser.add_argument('--load_model', default=False)
     args_parser.add_argument('--checkpoint_fpath')
-
 
     args = args_parser.parse_args()
     if args.mode == 'train':
