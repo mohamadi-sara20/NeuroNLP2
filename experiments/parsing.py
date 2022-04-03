@@ -688,11 +688,11 @@ def parse(args):
     output_dir = f'{directory}/{filename}/'
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
-    for i in range(len(data_test)-2):
+    for i in range(len(data_test[-1])):
         network._get_rnn_output(output_dir=output_dir,
-                                input_word=data_test[i]['WORD'],
-                                input_char=data_test[i]['CHAR'],
-                                input_pos=data_test[i]['POS'],
+                                input_word=data_test[0]['WORD'],
+                                input_char=data_test[0]['CHAR'],
+                                input_pos=data_test[0]['POS'],
                                 original_words=data_test[-1][i])
         # network.forward()
     # with torch.no_grad():
