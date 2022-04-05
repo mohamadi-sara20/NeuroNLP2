@@ -17,7 +17,7 @@ class CoNLLXReader(object):
     def close(self):
         self.__source_file.close()
 
-    def getNext(self, normalize_digits=True, symbolic_root=False, symbolic_end=False):
+    def getNext(self, normalize_digits=False, symbolic_root=False, symbolic_end=False):
         words = []
         word_ids = []
         char_seqs = []
@@ -84,10 +84,10 @@ class CoNLLXReader(object):
                 
                 if pos == '_':
                     pos = '$,'
-                    print('pos is undefined ')
+                    # print('pos is undefined ')
                     # print('head', head)
                     # print('type', ttype)
-                    print('pos', pos)
+                    # print('pos', pos)
                 if ttype == '_':
                     print('dep rel is undefined ')
                     print('head', head)
