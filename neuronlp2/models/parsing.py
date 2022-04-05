@@ -970,18 +970,19 @@ class BiRecurrentConvBiAffine(nn.Module):
         # import ipdb; ipdb.set_trace()
         # dep, head, out, dep, head
         # print("data", input_word.data[0])
-        for i in range(len(input_word.data[0])):
-            # if input_word.data[0][i] == 2 or input_word.data[0][i] == 1 or input_word.data[0][i] == 0:
-            if input_word.data[0][i] == 2 or input_word.data[0][i] == 1:
-                continue
-            
-            if original_words is not None:
-                english_word = original_words[i]
-            elif self.original_words is not None: 
-                english_word = self.original_words[i]
-            else:
-                english_word = self.id2word[int(input_word.data[0][i])]
+        for i in range(len(input_word.data)):
+            for j in range(len(input_word[i])):
+                if input_word.data[i][j] == 2 or input_word.data[i][j] == 1 or input_word.data[i][j] == 0:
+                # if input_word.data[0][i] == 2 or input_word.data[0][i] == 1:
+                    continue
                 
+                if original_words is not None:
+                    english_word = original_words[i][j]
+                # elif self.original_words is not None: 
+                #     english_word = self.original_words[i]
+                else:
+                    english_word = self.id2word[int(input_word.data[i][j])]
+                    
             # ignore original_words and always use id2word
 
             # try:
@@ -992,16 +993,18 @@ class BiRecurrentConvBiAffine(nn.Module):
             #     print('WORD', input_word.data[0])
                 
 
-            self._write_the_output(self.path, 
-                                   english_word,
-                                   arc_c.data[0][i], 
-                                   arc_h.data[0][i],
-                                   lstm_out.data[0][i],
-                                   type_c.data[0][i], type_h.data[0][i],
-                                   output_dir=output_dir
-            ) 
-        self._write_new_line(self.path,
-            output_dir=output_dir)
+                self._write_the_output(self.path, 
+                                    english_word,
+                                    arc_c.data[i][j], 
+                                    arc_h.data[i][j],
+                                    lstm_out.data[i][j],
+                                    type_c.data[i][j], type_h.data[i][j],
+                                    output_dir=output_dir
+                                    
+                                    
+                ) 
+            self._write_new_line(self.path,
+                output_dir=output_dir)
 
         # apply dropout
         # [batch, length, dim] --> [batch, 2 * length, dim]
