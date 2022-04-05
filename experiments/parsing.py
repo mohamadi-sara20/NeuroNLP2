@@ -681,25 +681,30 @@ def parse(args):
     gold_writer.start(gold_filename)
     network.eval()
     
-    
-    
     directory, filename = test_path.split('/')
     filename = filename.split('.')[0]
     output_dir = f'{directory}/{filename}/'
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
+        
+        
+    original_words = []
     for i in range(len(data_test[-1])):
+        original_words += data_test[-1][i]
+        
+    for i in range(len(data_test) - 2):
         network._get_rnn_output(output_dir=output_dir,
-                                input_word=data_test[0]['WORD'],
-                                input_char=data_test[0]['CHAR'],
-                                input_pos=data_test[0]['POS'],
-                                original_words=data_test[-1][i])
-        # network.forward()
+                                    input_word=data_test[0]['WORD'],
+                                    input_char=data_test[0]['CHAR'],
+                                    input_pos=data_test[0]['POS'],
+                                    original_words=data_test[-1])
+            # network.forward()
     # with torch.no_grad():
     #     print('Parsing...')
     #     start_time = time.time()
     #     eval(alg, data_test, network, pred_writer, gold_writer, punct_set, word_alphabet, pos_alphabet, device, beam, batch_size=args.batch_size)
     #     print('Time: %.2fs' % (time.time() - start_time))
+    
     pred_writer.close()
     gold_writer.close()
 
