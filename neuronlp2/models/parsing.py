@@ -913,7 +913,6 @@ class BiRecurrentConvBiAffine(nn.Module):
         return torch.cat([arc_c, type_c, arc_h, type_h], dim=2)
 
     def _get_rnn_output(self, input_word, input_char, input_pos, original_words=None, mask=None, length=None, hx=None, output_dir='./'):
-        
         # [batch, length, word_dim]
         word = self.word_embedd(input_word)
         # apply dropout on input
@@ -970,15 +969,15 @@ class BiRecurrentConvBiAffine(nn.Module):
             # skip _ROOT which is at the beginning of every sent
             for j in range(1, len(self.original_words[i])):
             # if input_word.data[0][i] == 2 or input_word.data[0][i] == 1 or input_word.data[0][i] == 0:
-                if input_word.data[0][i] == 2 or input_word.data[0][i] == 1:
+                if input_word.data[i][j] == 2 or input_word.data[i][j] == 1:
                     continue
                 
                 if original_words is not None:
-                    english_word = original_words[i]
+                    english_word = original_words[i][j]
                 elif self.original_words is not None: 
-                    english_word = self.original_words[i]
+                    english_word = self.original_words[i][j]
                 else:
-                    english_word = self.id2word[int(input_word.data[0][i])]
+                    english_word = self.id2word[int(input_word.data[i][j])]
                     
                 # ignore original_words and always use id2word
 
