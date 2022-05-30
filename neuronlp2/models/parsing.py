@@ -971,14 +971,14 @@ class BiRecurrentConvBiAffine(nn.Module):
         # dep, head, out, dep, head
         # print("data", input_word.data[0])
         for i in range(len(input_word.data)):
-            for j in range(1, len(original_words[i])):
+            for j in range(1, len(self.original_words[i])):
                 # if input_word.data[i][j] == 2 or input_word.data[i][j] == 1 or input_word.data[i][j] == 0:
                 if input_word.data[i][j] == 2 or input_word.data[i][j] == 1:
                     print('Here in this weird block')
                     continue
                 
-                if original_words is not None:
-                    english_word = original_words[i][j]
+                if self.original_words is not None:
+                    english_word = self.original_words[i][j]
                 # elif self.original_words is not None: 
                 #     english_word = self.original_words[i]
                 else:

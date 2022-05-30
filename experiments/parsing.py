@@ -365,7 +365,11 @@ def train(args):
     if load_model:
         print('##################################################################### Loading Partially Trained Model')
         network, optimizer, start_epoch = load_ckp(ckp_path, network, optimizer)
-         
+        
+        
+    # id2word = {v: k for k, v in word_alphabet.instance2index.items()}
+    # network.id2word = id2word
+    # network.original_words = id2word.values()
     for epoch in range(start_epoch, num_epochs + 1):
 
         start_time = time.time()
@@ -377,6 +381,7 @@ def train(args):
         num_back = 0
         num_nans = 0
         network.train()
+    
         lr = scheduler.get_lr()[0]
         print('Epoch %d (%s, lr=%.6f, lr decay=%.6f, grad clip=%.1f, l2=%.1e): ' % (epoch, opt_info, lr, lr_decay, grad_clip, weight_decay))
         if args.cuda:
