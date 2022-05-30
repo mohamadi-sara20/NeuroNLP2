@@ -233,10 +233,8 @@ class DeepBiAffine(nn.Module):
                 the initial states of RNN
             leading_symbolic: int
                 number of symbolic labels leading in type alphabets (set it to 0 if you are not sure)
-
         Returns: (Tensor, Tensor)
                 predicted heads and types.
-
         """
         # out_arc shape [batch, length_h, length_c]
         out_arc, out_type = self(input_word, input_char, input_pos, mask=mask)
@@ -319,10 +317,8 @@ class NeuroMST(DeepBiAffine):
                 the initial states of RNN
             leading_symbolic: int
                 number of symbolic labels leading in type alphabets (set it to 0 if you are not sure)
-
         Returns: (Tensor, Tensor)
                 predicted heads and types.
-
         """
         # out_arc shape [batch, length_h, length_c]
         energy, out_type = self(input_word, input_char, input_pos, mask=mask)
@@ -971,28 +967,28 @@ class BiRecurrentConvBiAffine(nn.Module):
         # dep, head, out, dep, head
         # print("data", input_word.data[0])
         for i in range(len(input_word.data)):
+            # skip _ROOT which is at the beginning of every sent
             for j in range(1, len(self.original_words[i])):
-                # if input_word.data[i][j] == 2 or input_word.data[i][j] == 1 or input_word.data[i][j] == 0:
-                if input_word.data[i][j] == 2 or input_word.data[i][j] == 1:
-                    print('Here in this weird block')
+            # if input_word.data[0][i] == 2 or input_word.data[0][i] == 1 or input_word.data[0][i] == 0:
+                if input_word.data[0][i] == 2 or input_word.data[0][i] == 1:
                     continue
                 
-                if self.original_words is not None:
-                    english_word = self.original_words[i][j]
-                # elif self.original_words is not None: 
-                #     english_word = self.original_words[i]
+                if original_words is not None:
+                    english_word = original_words[i]
+                elif self.original_words is not None: 
+                    english_word = self.original_words[i]
                 else:
-                    english_word = self.id2word[int(input_word.data[i][j])]
+                    english_word = self.id2word[int(input_word.data[0][i])]
                     
-            # ignore original_words and always use id2word
+                # ignore original_words and always use id2word
 
-            # try:
-            #     english_word = self.id2word[int(input_word.data[0][i])]
-            #     print('JJJ', int(input_word.data[0][i]))
-            # except:
-            #     print('KK', int(input_word.data[0][i]))
-            #     print('WORD', input_word.data[0])
-                
+                # try:
+                #     english_word = self.id2word[int(input_word.data[0][i])]
+                #     print('JJJ', int(input_word.data[0][i]))
+                # except:
+                #     print('KK', int(input_word.data[0][i]))
+                #     print('WORD', input_word.data[0])
+                    
 
                 self._write_the_output(self.path, 
                                     english_word,
@@ -1003,7 +999,7 @@ class BiRecurrentConvBiAffine(nn.Module):
                                     output_dir=output_dir
                                     
                                     
-                ) 
+                )
             self._write_new_line(self.path,
                 output_dir=output_dir)
 
@@ -1131,10 +1127,8 @@ class BiRecurrentConvBiAffine(nn.Module):
                 the initial states of RNN
             leading_symbolic: int
                 number of symbolic labels leading in type alphabets (set it to 0 if you are not sure)
-
         Returns: (Tensor, Tensor)
                 predicted heads and types.
-
         '''
         # out_arc shape [batch, length, length]
         out_arc, out_type, mask, length = self.forward(input_word, input_char, input_pos, mask=mask, length=length, hx=hx )
