@@ -6,9 +6,9 @@
   "pos_dim": 100,
   "rnn_mode": "FastLSTM",
   "num_layers":3,
-  "hidden_size": 512,
-  "arc_space": 512,
-  "type_space": 128,
+  "hidden_size": 500,
+  "arc_space": 500,
+  "type_space": 100,
   "p_in": 0.33,
   "p_out": 0.33,
   "p_rnn": [0.33, 0.33],
@@ -16,3 +16,4 @@
   "kernel_size": 60,
   "activation": "elu"
 }
+
