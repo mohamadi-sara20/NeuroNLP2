@@ -965,40 +965,41 @@ class BiRecurrentConvBiAffine(nn.Module):
         # import ipdb; ipdb.set_trace()
         # dep, head, out, dep, head
         # print("data", input_word.data[0])
+        total_index = -1
         for i in range(len(input_word.data)):
             # skip _ROOT which is at the beginning of every sent
-            for j in range(1, len(self.original_words[i])):
+            for j in range(1, len(input_word[i])):
+                total_index += 1
             # if input_word.data[0][i] == 2 or input_word.data[0][i] == 1 or input_word.data[0][i] == 0:
-                if input_word.data[i][j] == 2 or input_word.data[i][j] == 1:
-                    continue
-                
+                # if input_word.data[i][j] == 2 or input_word.data[i][j] == 1:
+                #     print('#############################', self.id2word[int(input_word.data[i][j])])
+                #     continue
                 if original_words is not None:
-                    english_word = original_words[i][j]
-                elif self.original_words is not None: 
-                    english_word = self.original_words[i][j]
+                    german_word = original_words[i][j]
+                elif self.original_words is not None:
+                    german_word = self.original_words[total_index]
                 else:
-                    english_word = self.id2word[int(input_word.data[i][j])]
-                    
-                # ignore original_words and always use id2word
+                    print("Word not found")
+                #     german_word = self.id2word[int(input_word.data[i][j])]
+                if german_word == '_PAD' or german_word == '_ROOT' or german_word == '_END':
+                    continue
+                try:
+                    if total_index % 100 == 0:
+                        alt_word = self.original_words[total_index]
+                        if (alt_word != german_word):
+                            print(f'{german_word} <> {alt_word}')
+                except Exception:
+                    pass
 
-                # try:
-                #     english_word = self.id2word[int(input_word.data[0][i])]
-                #     print('JJJ', int(input_word.data[0][i]))
-                # except:
-                #     print('KK', int(input_word.data[0][i]))
-                #     print('WORD', input_word.data[0])
-                    
-
+                
                 self._write_the_output(self.path, 
-                                    english_word,
+                                    german_word,
                                     arc_c.data[i][j], 
                                     arc_h.data[i][j],
                                     lstm_out.data[i][j],
-                                    type_c.data[i][j], type_h.data[i][j],
-                                    output_dir=output_dir
-                                    
-                                    
-                )
+                                    type_c.data[i][j], 
+                                    type_h.data[i][j],
+                                    output_dir=output_dir)
             self._write_new_line(self.path,
                 output_dir=output_dir)
 
