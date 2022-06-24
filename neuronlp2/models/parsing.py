@@ -968,7 +968,9 @@ class BiRecurrentConvBiAffine(nn.Module):
         total_index = -1
         for i in range(len(input_word.data)):
             # skip _ROOT which is at the beginning of every sent
-            for j in range(1, len(input_word[i])):
+            for j in range(1, len(input_word.data[i])):
+                if j >= len(original_words[i]):
+                    break
                 total_index += 1
             # if input_word.data[0][i] == 2 or input_word.data[0][i] == 1 or input_word.data[0][i] == 0:
                 # if input_word.data[i][j] == 2 or input_word.data[i][j] == 1:
@@ -978,9 +980,11 @@ class BiRecurrentConvBiAffine(nn.Module):
                     german_word = original_words[i][j]
                 elif self.original_words is not None:
                     german_word = self.original_words[total_index]
+
                 else:
                     print("Word not found")
                 #     german_word = self.id2word[int(input_word.data[i][j])]
+                print(german_word)
                 if german_word == '_PAD' or german_word == '_ROOT' or german_word == '_END':
                     continue
                 try:
